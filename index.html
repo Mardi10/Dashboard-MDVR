@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring MDVR - Professional UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .form-container { max-width: 900px; margin: 2rem auto; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        .section-title { color: #2563eb; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; border-left: 3px solid #2563eb; padding-left: 10px; margin-bottom: 1.5rem; margin-top: 2rem; }
+        .input-label { display: block; font-size: 0.875rem; font-weight: 600; color: #475569; margin-bottom: 0.5rem; }
+        .custom-input { width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.875rem; transition: all 0.2s; }
+        .custom-input:focus { outline: none; border-color: #3b82f6; background-color: #fff; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .btn-shift { display: block; width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-weight: 600; font-size: 0.875rem; text-align: center; cursor: pointer; background-color: white; color: #64748b; transition: all 0.2s; }
+        input[type="radio"]:checked + .btn-shift { background-color: #eff6ff; color: #2563eb; border: 2px solid #3b82f6 !important; }
+        .upload-box { border: 2px dashed #e2e8f0; border-radius: 8px; padding: 1.5rem; text-align: center; background-color: #f8fafc; cursor: pointer; min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; transition: border-color 0.2s; }
+        .upload-box:focus-within { border-color: #3b82f6; background-color: #eff6ff; }
+        .preview-img { max-width: 100%; max-height: 140px; border-radius: 4px; object-fit: contain; display: none; position: relative; z-index: 10; }
+        .db-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #e2e8f0; cursor: pointer; background-color: #f1f5f9; transition: transform 0.2s; }
+        .db-thumb:hover { transform: scale(1.1); border-color: #3b82f6; }
+        .loader { border-top-color: #3b82f6; animation: spinner 0.6s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .page-btn { padding: 0.5rem 1rem; border: 1px solid #e2e8f0; border-radius: 6px; background: white; font-weight: 700; font-size: 10px; transition: all 0.2s; }
+        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .page-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+        .copy-hint { font-size: 8px; color: #3b82f6; font-weight: bold; margin-top: 2px; }
+    </style>
+</head>
+<body class="p-4" onpaste="handleGlobalPaste(event)">
+
+    <div class="text-center mb-8 mt-4">
+        <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Monitoring MDVR</h1>
+        <p class="text-slate-500 text-sm mt-1">Sistem Pelaporan Pelanggaran MDVR Unit</p>
+    </div>
+
+    <div class="max-w-[900px] mx-auto flex gap-4 mb-4 border-b border-slate-200">
+        <button onclick="switchTab('input')" id="tabInput" class="text-sm font-bold px-4 py-2 text-blue-600 border-b-2 border-blue-600">INPUT DATA</button>
+        <button onclick="switchTab('database')" id="tabDatabase" class="text-sm font-bold px-4 py-2 text-slate-400 hover:text-slate-600">DATABASE</button>
+    </div>
+
+    <main class="max-w-[900px] mx-auto">
+        <!-- TAB INPUT -->
+        <div id="sectionInput" class="form-container">
+            <form id="mdvrForm" class="p-8 space-y-8" autocomplete="off">
+                <input type="hidden" id="rowId" name="id">
+                
+                <div>
+                    <h3 class="section-title">Informasi Personel & Unit</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="input-label">Nama Lengkap</label>
+                            <input type="text" name="nama" list="listNama" oninput="handleAutocomplete(this, 'listNama', 'Nama')" required class="custom-input uppercase" placeholder="Nama Personel...">
+                            <datalist id="listNama"></datalist>
+                        </div>
+                        <div>
+                            <label class="input-label">NRP</label>
+                            <input type="text" name="nrp" list="listNrp" oninput="handleAutocomplete(this, 'listNrp', 'NRP')" required class="custom-input" placeholder="NRP...">
+                            <datalist id="listNrp"></datalist>
+                        </div>
+                        <div>
+                            <label class="input-label">Jabatan</label>
+                            <input type="text" name="jabatan" list="listJabatan" oninput="handleAutocomplete(this, 'listJabatan', 'Jabatan')" required class="custom-input" placeholder="Jabatan...">
+                            <datalist id="listJabatan"></datalist>
+                        </div>
+                        <div>
+                            <label class="input-label">Nomor Lambung</label>
+                            <input type="text" name="noLambung" list="listNoLambung" oninput="handleAutocomplete(this, 'listNoLambung', 'No Lambung')" required class="custom-input uppercase font-bold" placeholder="Contoh: DT 1234">
+                            <datalist id="listNoLambung"></datalist>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="section-title">Detail Monitoring</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="input-label">Tanggal Temuan</label>
+                            <input type="date" name="tanggal" id="inputTanggal" required class="custom-input">
+                        </div>
+                        <div>
+                            <label class="input-label">Rentang Waktu (Bisa duplikat)</label>
+                            <div class="flex gap-2">
+                                <select id="timePicker" class="custom-input flex-1">
+                                    <option value="00-01">00-01</option>
+                                    <option value="01-02">01-02</option>
+                                    <option value="02-03">02-03</option>
+                                    <option value="03-04">03-04</option>
+                                    <option value="04-05">04-05</option>
+                                    <option value="05-06">05-06</option>
+                                    <option value="06-07">06-07</option>
+                                    <option value="07-08">07-08</option>
+                                    <option value="08-09">08-09</option>
+                                    <option value="09-10">09-10</option>
+                                    <option value="10-11">10-11</option>
+                                    <option value="11-12">11-12</option>
+                                    <option value="12-13">12-13</option>
+                                    <option value="13-14">13-14</option>
+                                    <option value="14-15">14-15</option>
+                                    <option value="15-16">15-16</option>
+                                    <option value="16-17">16-17</option>
+                                    <option value="17-18">17-18</option>
+                                    <option value="18-19">18-19</option>
+                                    <option value="19-20">19-20</option>
+                                    <option value="20-21">20-21</option>
+                                    <option value="21-22">21-22</option>
+                                    <option value="22-23">22-23</option>
+                                    <option value="23-00">23-00</option>
+                                </select>
+                                <button type="button" onclick="addTimeTag()" class="bg-blue-600 text-white px-4 rounded-md font-bold text-lg hover:bg-blue-700">+</button>
+                            </div>
+                            <div id="timeTagsContainer" class="flex flex-wrap gap-2 mt-3"></div>
+                            <input type="hidden" name="waktu" id="waktuHidden" required>
+                        </div>
+                        <div>
+                            <label class="input-label">Jenis Masalah</label>
+                            <select name="masalah" required class="custom-input">
+                                <option value="">-- Pilih Masalah --</option>
+                                <option value="Yawning">Yawning (Menguap)</option>
+                                <option value="Eyes Closed">Eyes Closed (Mata Tertutup)</option>
+                                <option value="Camera Covered">Camera Covered (Kamera Tertutup)</option>
+                                <option value="Using Phone">Using Phone (Main HP)</option>
+                                <option value="Seat Belt">Seat Belt (Tanpa Sabuk)</option>
+                                <option value="Driver Smoking">Driver Smoking (Driver Merokok)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="input-label">Shift Kerja</label>
+                            <div class="flex gap-4">
+                                <div class="flex-1">
+                                    <input type="radio" name="shift" id="shift1" value="Shift I" checked class="hidden peer">
+                                    <label for="shift1" class="btn-shift peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:border-blue-500 peer-checked:border-2">SHIFT I</label>
+                                </div>
+                                <div class="flex-1">
+                                    <input type="radio" name="shift" id="shift2" value="Shift II" class="hidden peer">
+                                    <label for="shift2" class="btn-shift peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:border-blue-500 peer-checked:border-2">SHIFT II</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="input-label">PIT</label>
+                        <select name="pit" class="custom-input">
+                            <option value="PIT BT">PIT BT</option>
+                            <option value="PIT TAS">PIT TAS</option>
+                            <option value="PIT FSP">PIT FSP</option>
+                            <option value="LAINNYA">LAINNYA</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="input-label">Sanksi</label>
+                        <input type="text" name="sanksi" list="listSanksi" oninput="handleAutocomplete(this, 'listSanksi', 'Sanksi')" required class="custom-input" placeholder="Jenis sanksi...">
+                        <datalist id="listSanksi"></datalist>
+                    </div>
+                    <div>
+                        <label class="input-label">PIC DEPT</label>
+                        <input type="text" name="pic" list="listPic" oninput="handleAutocomplete(this, 'listPic', 'PIC')" required class="custom-input" placeholder="Nama PIC...">
+                        <datalist id="listPic"></datalist>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="section-title">Dokumentasi Foto (Bisa Klik/Paste)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div id="dropBefore" tabindex="0">
+                            <label class="input-label text-center">FOTO SEBELUM</label>
+                            <div class="upload-box" onclick="document.getElementById('fileBefore').click()">
+                                <input type="file" id="fileBefore" accept="image/*" class="hidden" onchange="previewImage(this, 'previewBefore', 'iconBefore', 'base64Before')">
+                                <div id="iconBefore" class="flex flex-col items-center"><span class="text-3xl mb-1">📷</span><p class="text-[10px] font-bold text-slate-400 uppercase">Klik atau Paste Gambar</p></div>
+                                <img id="previewBefore" src="#" class="preview-img">
+                                <input type="hidden" name="fotoSebelumBase64" id="base64Before">
+                                <input type="hidden" name="fotoSebelumExisting" id="existingBefore">
+                            </div>
+                        </div>
+                        <div id="dropAfter" tabindex="0">
+                            <label class="input-label text-center">FOTO SESUDAH</label>
+                            <div class="upload-box" onclick="document.getElementById('fileAfter').click()">
+                                <input type="file" id="fileAfter" accept="image/*" class="hidden" onchange="previewImage(this, 'previewAfter', 'iconAfter', 'base64After')">
+                                <div id="iconAfter" class="flex flex-col items-center"><span class="text-3xl mb-1">📷</span><p class="text-[10px] font-bold text-slate-400 uppercase">Klik atau Paste Gambar</p></div>
+                                <img id="previewAfter" src="#" class="preview-img">
+                                <input type="hidden" name="fotoSesudahBase64" id="base64After">
+                                <input type="hidden" name="fotoSesudahExisting" id="existingAfter">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="input-label">Status Laporan</label>
+                    <select name="keterangan" class="custom-input font-bold text-blue-600">
+                        <option value="OPEN">OPEN</option>
+                        <option value="CLOSE">CLOSE</option>
+                    </select>
+                </div>
+
+                <div class="flex gap-4 pt-4">
+                    <button type="submit" id="submitBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-md shadow-lg uppercase text-xs tracking-widest transition-all">Simpan Laporan</button>
+                    <button type="button" onclick="resetForm()" class="px-8 border border-slate-200 text-slate-400 font-bold rounded-md hover:bg-slate-50 text-xs uppercase transition-all">Batal</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- TAB DATABASE -->
+        <div id="sectionDatabase" class="hidden">
+            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 class="font-bold text-slate-700" id="dbTitle">Database Monitoring</h2>
+                        <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Klik gambar untuk copy fisik foto</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                        <button onclick="loadData()" class="bg-white border border-slate-200 p-2 rounded-md hover:bg-slate-50 shadow-sm">🔄</button>
+                        <input type="text" id="dbSearch" oninput="currentPage=1; renderTable()" placeholder="Cari NRP/Unit/Nama..." class="text-xs border border-slate-200 px-4 py-2 rounded-md w-full md:w-48 outline-none focus:border-blue-500 shadow-inner">
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto min-h-[450px]">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                            <tr>
+                                <th class="px-4 py-4">Unit & Waktu</th>
+                                <th class="px-4 py-4">Personel</th>
+                                <th class="px-4 py-4">Pelanggaran</th>
+                                <th class="px-4 py-4">Bukti Foto</th>
+                                <th class="px-4 py-4">Status</th>
+                                <th class="px-4 py-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dbTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                    
+                    <div id="emptyState" class="p-20 text-center flex flex-col items-center justify-center gap-3">
+                         <div class="loader rounded-full border-2 border-slate-200 h-8 w-8"></div>
+                         <span class="text-slate-400 font-bold italic text-sm">Memuat Data Database...</span>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-slate-50 border-t flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div id="pageInfo" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Memuat...</div>
+                    <div class="flex gap-2" id="paginationWrapper">
+                        <button id="prevBtn" onclick="changePage(-1)" class="page-btn">PREV</button>
+                        <div id="pageNumbers" class="flex gap-1"></div>
+                        <button id="nextBtn" onclick="changePage(1)" class="page-btn">NEXT</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[1000]">
+        <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-xs w-full">
+            <div class="loader rounded-full border-4 border-slate-100 h-16 w-16 mx-auto mb-4"></div>
+            <p id="loadingText" class="font-black text-slate-800 uppercase tracking-tighter text-lg">Mengirim Data</p>
+            <p class="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Tunggu Sebentar...</p>
+        </div>
+    </div>
+
+    <!-- Message Toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest opacity-0 pointer-events-none transition-all z-[2000]"></div>
+
+    <script>
+        let selectedTimes = [];
+        let allData = [];
+        let currentPage = 1;
+        const rowsPerPage = 10;
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.remove('opacity-0', 'translate-y-4');
+            t.classList.add('opacity-100', '-translate-y-4');
+            setTimeout(() => {
+                t.classList.add('opacity-0', 'translate-y-4');
+                t.classList.remove('opacity-100', '-translate-y-4');
+            }, 3000);
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tabInput').className = tab === 'input' ? "text-sm font-bold px-4 py-2 text-blue-600 border-b-2 border-blue-600" : "text-sm font-bold px-4 py-2 text-slate-400 hover:text-slate-600";
+            document.getElementById('tabDatabase').className = tab === 'database' ? "text-sm font-bold px-4 py-2 text-blue-600 border-b-2 border-blue-600" : "text-sm font-bold px-4 py-2 text-slate-400 hover:text-slate-600";
+            document.getElementById('sectionInput').classList.toggle('hidden', tab !== 'input');
+            document.getElementById('sectionDatabase').classList.toggle('hidden', tab !== 'database');
+            if(tab === 'database') loadData();
+        }
+
+        // Fitur Paste Gambar
+        function handleGlobalPaste(e) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            let targetImgId, targetIconId, targetHiddenId;
+
+            // Cek target elemen yang aktif atau terdekat untuk menentukan upload box mana
+            const activeElem = document.activeElement;
+            if (activeElem.closest('#dropBefore')) {
+                targetImgId = 'previewBefore'; targetIconId = 'iconBefore'; targetHiddenId = 'base64Before';
+            } else if (activeElem.closest('#dropAfter')) {
+                targetImgId = 'previewAfter'; targetIconId = 'iconAfter'; targetHiddenId = 'base64After';
+            } else {
+                return; // Tidak ada box yang difokuskan
+            }
+
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById(targetImgId).src = event.target.result;
+                        document.getElementById(targetImgId).style.display = 'block';
+                        document.getElementById(targetIconId).style.display = 'none';
+                        document.getElementById(targetHiddenId).value = event.target.result;
+                        showToast("Gambar Berhasil di-Paste");
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        }
+
+        // Fitur Copy Gambar Fisik dari URL (Untuk Database)
+        async function copyImageToClipboard(imageUrl) {
+            if (!imageUrl) return;
+            try {
+                showToast("Menyiapkan Gambar...");
+                const data = await fetch(imageUrl);
+                const blob = await data.blob();
+                
+                // Konversi ke PNG jika perlu karena Clipboard API lebih mendukung PNG
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.src = URL.createObjectURL(blob);
+                img.onload = async () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    canvas.toBlob(async (pngBlob) => {
+                        try {
+                            const item = new ClipboardItem({ 'image/png': pngBlob });
+                            await navigator.clipboard.write([item]);
+                            showToast("Fisik Foto Berhasil Disalin!");
+                        } catch (err) {
+                            showToast("Gagal Copy Foto");
+                        }
+                    }, 'image/png');
+                };
+            } catch (err) {
+                showToast("Gagal Mengakses Gambar");
+            }
+        }
+
+        function previewImage(input, imgId, iconId, hiddenId) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById(imgId).src = e.target.result;
+                    document.getElementById(imgId).style.display = 'block';
+                    document.getElementById(iconId).style.display = 'none';
+                    document.getElementById(hiddenId).value = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function addTimeTag() {
+            const val = document.getElementById('timePicker').value;
+            if (val) {
+                // Sekarang mengizinkan duplikat sesuai permintaan
+                selectedTimes.push(val);
+                renderTimeTags();
+            }
+        }
+
+        function renderTimeTags() {
+            const container = document.getElementById('timeTagsContainer');
+            container.innerHTML = selectedTimes.map((t, i) => `
+                <span class="bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-black flex items-center gap-1 shadow-sm">
+                    ${t} <button type="button" onclick="removeTime(${i})" class="ml-1 text-blue-200 hover:text-white">×</button>
+                </span>`).join('');
+            document.getElementById('waktuHidden').value = selectedTimes.join(', ');
+        }
+
+        function removeTime(index) {
+            selectedTimes.splice(index, 1);
+            renderTimeTags();
+        }
+
+        function handleAutocomplete(inputElement, datalistId, headerName) {
+            const query = inputElement.value.trim().toLowerCase();
+            const datalist = document.getElementById(datalistId);
+            if (!allData || allData.length === 0 || query.length < 1) return;
+            
+            const uniqueValues = [...new Set(allData.map(item => item[headerName]))]
+                .filter(val => val && String(val).toLowerCase().includes(query))
+                .sort();
+            datalist.innerHTML = uniqueValues.map(val => `<option value="${val}">`).join('');
+        }
+
+        function loadData() {
+            const tbody = document.getElementById('dbTableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+            emptyState.classList.remove('hidden');
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(data => { 
+                        allData = data || []; 
+                        renderTable();
+                    })
+                    .withFailureHandler(err => {
+                        emptyState.innerHTML = `<span class="text-red-500 font-bold">Gagal memuat: ${err}</span>`;
+                    })
+                    .getDataFromSheet();
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('dbTableBody');
+            const search = (document.getElementById('dbSearch').value || '').toLowerCase();
+            const emptyState = document.getElementById('emptyState');
+            
+            const filtered = allData.filter(d => {
+                const searchString = `${d.NRP} ${d["No Lambung"]} ${d.Nama} ${d.Masalah}`.toLowerCase();
+                return searchString.includes(search);
+            });
+
+            if(filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                emptyState.innerHTML = `<span class="text-slate-400 italic font-bold uppercase text-xs">Pencarian Tidak Ditemukan</span>`;
+                document.getElementById('pageInfo').innerText = "0 Data";
+                updatePaginationControls(0);
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            const totalPages = Math.ceil(filtered.length / rowsPerPage);
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            const start = (currentPage - 1) * rowsPerPage;
+            const paginatedData = filtered.slice(start, start + rowsPerPage);
+
+            document.getElementById('pageInfo').innerText = `Data ${start + 1}-${Math.min(start + rowsPerPage, filtered.length)} dari ${filtered.length}`;
+
+            tbody.innerHTML = paginatedData.map(item => `
+                <tr class="hover:bg-blue-50/30 transition-all border-b border-slate-50">
+                    <td class="px-4 py-4">
+                        <div class="font-black text-slate-800 text-sm uppercase">${item["No Lambung"] || '-'}</div>
+                        <div class="text-[10px] font-bold text-blue-600 bg-blue-50 inline-block px-1 rounded">${item.Waktu || '-'}</div>
+                        <div class="text-[9px] text-slate-400 font-bold block mt-1 italic">${item.Tanggal || '-'}</div>
+                    </td>
+                    <td class="px-4 py-4">
+                        <div class="font-bold text-slate-700 text-xs uppercase">${item.Nama || '-'}</div>
+                        <div class="text-[9px] text-slate-400 font-mono tracking-tighter">NRP: ${item.NRP || '-'}</div>
+                    </td>
+                    <td class="px-4 py-4">
+                        <div class="font-black text-red-600 text-[10px] uppercase">${item.Masalah || '-'}</div>
+                        <div class="text-[8px] text-slate-400 font-bold uppercase tracking-tight">${item.Shift || '-'} | ${item.PIT || '-'}</div>
+                    </td>
+                    <td class="px-4 py-4">
+                        <div class="flex gap-1">
+                            <div class="flex flex-col items-center">
+                                ${item["Foto Sebelum_Thumb"] ? `<img src="${item["Foto Sebelum_Thumb"]}" class="db-thumb" onclick="copyImageToClipboard('${item["Foto Sebelum_Thumb"]}')" title="Klik untuk Copy Foto">` : '<div class="w-[60px] h-[60px] bg-slate-100 flex items-center justify-center text-[8px] text-slate-300">N/A</div>'}
+                                ${item["Foto Sebelum_Thumb"] ? `<span class="copy-hint">COPY FOTO</span>` : ''}
+                            </div>
+                            <div class="flex flex-col items-center">
+                                ${item["Foto Sesudah_Thumb"] ? `<img src="${item["Foto Sesudah_Thumb"]}" class="db-thumb" onclick="copyImageToClipboard('${item["Foto Sesudah_Thumb"]}')" title="Klik untuk Copy Foto">` : ''}
+                                ${item["Foto Sesudah_Thumb"] ? `<span class="copy-hint">COPY FOTO</span>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-4">
+                        <span class="px-2 py-1 rounded-[4px] text-[9px] font-black block text-center shadow-sm ${item.Keterangan === 'OPEN' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}">${item.Keterangan || 'OPEN'}</span>
+                    </td>
+                    <td class="px-4 py-4 text-center">
+                        <button onclick="editData('${item.ID}')" class="bg-slate-800 text-white hover:bg-blue-600 px-3 py-1 rounded text-[9px] font-bold uppercase transition-all shadow-sm">Edit</button>
+                    </td>
+                </tr>`).join('');
+
+            updatePaginationControls(totalPages);
+        }
+
+        function updatePaginationControls(totalPages) {
+            const pageNumbers = document.getElementById('pageNumbers');
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = (currentPage === totalPages || totalPages === 0);
+
+            let btns = "";
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    btns += `<button onclick="goToPage(${i})" class="page-btn ${i === currentPage ? 'active' : ''}">${i}</button>`;
+                }
+            }
+            pageNumbers.innerHTML = btns;
+        }
+
+        function changePage(step) {
+            currentPage += step;
+            renderTable();
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderTable();
+        }
+
+        document.getElementById('mdvrForm').onsubmit = function(e) {
+            e.preventDefault();
+            if (selectedTimes.length === 0) { alert("Pilih minimal satu rentang waktu!"); return; }
+            
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            const formData = Object.fromEntries(new FormData(this));
+            
+            google.script.run
+                .withSuccessHandler(res => {
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                    resetForm(); 
+                    switchTab('database');
+                })
+                .withFailureHandler(err => {
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                    alert("Gagal menyimpan data: " + err);
+                })
+                .processForm(formData);
+        };
+
+        function editData(id) {
+            const item = allData.find(d => String(d.ID) === String(id));
+            if(!item) return;
+            switchTab('input');
+            const f = document.getElementById('mdvrForm');
+            f.elements["id"].value = item["ID"];
+            f.elements["nama"].value = item["Nama"];
+            f.elements["nrp"].value = item["NRP"];
+            f.elements["jabatan"].value = item["Jabatan"];
+            f.elements["noLambung"].value = item["No Lambung"];
+            
+            // Format Tanggal secara aman agar tetap konsisten dengan data asli
+            let rawDate = item["Tanggal"] || "";
+            if (rawDate) {
+                // Memastikan input type="date" menerima format standar YYYY-MM-DD
+                let formattedDate = rawDate;
+                if (rawDate.includes("/")) {
+                    // Jika format menggunakan garis miring (DD/MM/YYYY atau MM/DD/YYYY)
+                    let parts = rawDate.split("/");
+                    if (parts[2] && parts[2].length === 4) {
+                        // Asumsi format DD/MM/YYYY ke YYYY-MM-DD
+                        formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    }
+                }
+                f.elements["tanggal"].value = formattedDate;
+            } else {
+                f.elements["tanggal"].value = "";
+            }
+
+            f.elements["masalah"].value = item["Masalah"];
+            f.elements["pit"].value = item["PIT"];
+            f.elements["sanksi"].value = item["Sanksi"];
+            f.elements["pic"].value = item["PIC"];
+            f.elements["keterangan"].value = item["Keterangan"];
+            
+            const radios = document.getElementsByName("shift");
+            radios.forEach(r => { if(r.value == item["Shift"]) r.checked = true; });
+            
+            selectedTimes = item["Waktu"] ? item["Waktu"].split(', ') : []; 
+            renderTimeTags();
+            
+            document.getElementById('submitBtn').innerText = "Update Laporan";
+            document.getElementById('existingBefore').value = item["Foto Sebelum"] || "";
+            document.getElementById('existingAfter').value = item["Foto Sesudah"] || "";
+            
+            if(item["Foto Sebelum_Thumb"]) { 
+                document.getElementById('previewBefore').src = item["Foto Sebelum_Thumb"]; 
+                document.getElementById('previewBefore').style.display = 'block'; 
+                document.getElementById('iconBefore').style.display = 'none'; 
+            }
+            if(item["Foto Sesudah_Thumb"]) { 
+                document.getElementById('previewAfter').src = item["Foto Sesudah_Thumb"]; 
+                document.getElementById('previewAfter').style.display = 'block'; 
+                document.getElementById('iconAfter').style.display = 'none'; 
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('mdvrForm').reset();
+            document.getElementById('rowId').value = "";
+            document.getElementById('submitBtn').innerText = "Simpan Laporan";
+            selectedTimes = []; 
+            renderTimeTags();
+            document.getElementById('previewBefore').style.display = 'none';
+            document.getElementById('previewAfter').style.display = 'none';
+            document.getElementById('iconBefore').style.display = 'flex';
+            document.getElementById('iconAfter').style.display = 'flex';
+            document.getElementById('base64Before').value = "";
+            document.getElementById('base64After').value = "";
+            document.getElementById('existingBefore').value = "";
+            document.getElementById('existingAfter').value = "";
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
